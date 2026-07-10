@@ -1,0 +1,20 @@
+{
+  "_comment": "Static USD/month reference prices, ap-south-1 (Mumbai) on-demand. Not live pricing -- for directional savings estimates only. See pricing_engine.py docstring for why static was chosen over the live Pricing API.",
+  "EC2": {
+    "t3.micro": 8.5, "t3.small": 17.0, "t3.medium": 34.0, "t3.large": 68.0,
+    "t3.xlarge": 136.0, "m5.large": 82.0, "m5.xlarge": 164.0, "m5.2xlarge": 328.0,
+    "unknown": 34.0
+  },
+  "EBS_GB_MONTH": {
+    "gp3": 0.088, "gp2": 0.11, "io1": 0.138, "snapshot": 0.052
+  },
+  "ELASTIC_IP_UNATTACHED_MONTHLY_COST": 3.6,
+  "RDS": {
+    "db.t3.micro": 17.0, "db.t3.small": 34.0, "db.t3.medium": 68.0,
+    "db.t3.large": 136.0, "db.m5.large": 175.0, "db.m5.xlarge": 350.0,
+    "db.r5.2xlarge": 700.0, "db.r5.4xlarge": 1400.0, "db.m5.2xlarge": 350.0, "db.m5.4xlarge": 700.0,
+    "unknown": 68.0
+  },
+  "LOAD_BALANCER_MONTHLY_COST": 19.0,
+  "NAT_GATEWAY_MONTHLY_COST": 33.0
+}

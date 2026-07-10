@@ -1,0 +1,8 @@
+boto3>=1.34
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+mangum>=0.17
+pytest>=8.0
+pytest-mock>=3.12
+moto>=5.0

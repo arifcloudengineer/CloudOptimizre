@@ -1,0 +1,20 @@
+[Unit]
+Description=CloudOptimizer FastAPI backend
+After=network.target
+
+[Service]
+Type=simple
+User=cloudoptimizer
+WorkingDirectory=/opt/cloudoptimizer/backend
+Environment=RESOURCES_TABLE=cloudoptimizer-resources-dev
+Environment=SCAN_HISTORY_TABLE=cloudoptimizer-resources-dev-scan-history
+Environment=SNS_TOPIC_ARN=
+Environment=SAVINGS_ALERT_LIMIT=50
+# SCANNER_LAMBDA_NAME is deliberately unset: on EC2 there is no Lambda to
+# invoke, so POST /scan runs the scan in-process (see api/main.py trigger_scan).
+ExecStart=/opt/cloudoptimizer/backend/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,126 @@
+name: CloudOptimizer CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-south-1
+  TF_VERSION: "1.7.5"
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  terraform:
+    name: Terraform fmt & validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform fmt (check only)
+        run: terraform fmt -check -recursive ../../
+
+      - name: Terraform init (no backend, validate only)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+  backend-tests:
+    name: Python tests & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check backend --line-length 120 || true # non-blocking, informational for now
+
+      - name: Run tests
+        working-directory: .
+        run: |
+          PYTHONPATH=backend:tests python -m pytest tests/ -v
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+  deploy-lambda:
+    name: Deploy Lambda (main branch only)
+    needs: [terraform, backend-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve -var="alert_email=${{ secrets.ALERT_EMAIL }}"
+
+      - name: Smoke test — invoke scanner Lambda synchronously
+        run: |
+          aws lambda invoke \
+            --function-name cloudoptimizer-scanner-dev \
+            --invocation-type RequestResponse \
+            --payload '{}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/response.json
+          cat /tmp/response.json
+          grep -q '"statusCode": 200' /tmp/response.json

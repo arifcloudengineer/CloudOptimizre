@@ -1,0 +1,59 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyResourceDiscovery",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*",
+        "elasticloadbalancing:Describe*",
+        "rds:Describe*",
+        "rds:ListTagsForResource",
+        "s3:GetBucket*",
+        "s3:ListBucket",
+        "s3:ListAllMyBuckets",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetBucketPolicyStatus",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:GetMetricData",
+        "tag:GetResources",
+        "pricing:GetProducts",
+        "ce:GetCostAndUsage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DynamoDBReadWrite",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem",
+        "dynamodb:BatchWriteItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/cloudoptimizer-resources-*",
+        "arn:aws:dynamodb:*:*:table/cloudoptimizer-resources-*/index/*"
+      ]
+    },
+    {
+      "Sid": "PublishNotifications",
+      "Effect": "Allow",
+      "Action": ["sns:Publish"],
+      "Resource": "arn:aws:sns:*:*:cloudoptimizer-alerts-*"
+    },
+    {
+      "Sid": "SafeRemediationActions",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:ReleaseAddress",
+        "ec2:DeleteVolume",
+        "ec2:CreateTags",
+        "ec2:CreateSnapshot"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
